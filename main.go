@@ -85,7 +85,6 @@ func main() {
 		return c.JSON(parsedOutput)
 	})
 
-	// Endpoint to run the star binary
 // Endpoint to run the star binary
 app.Get("/run-star", func(c *fiber.Ctx) error {
 	birthdate := c.Query("birthdate")
@@ -122,7 +121,7 @@ app.Get("/run-star", func(c *fiber.Ctx) error {
 
 		result = append(result, parsedOutput...)
 	}
-
+	fmt.Println("Star result:", result)
 	return c.JSON(result)
 })
 
@@ -157,13 +156,19 @@ func parseBirthdate(date string) (string, error) {
 		return "", fmt.Errorf("Failed to parse birthdate: %v", err)
 	}
 
-	formattedDate := parsedTime.Format("1.2.2006")
+	// Validate the month value
+	if parsedTime.Month() > 12 {
+		return "", fmt.Errorf("Invalid month value in birthdate: %d", parsedTime.Month())
+	}
+
+	formattedDate := parsedTime.Format("2.1.2006")
 
 	return formattedDate, nil
 }
 
 func runBinary(binaryName string, args string) (string, error) {
 	cmd := exec.Command(binaryName, strings.Split(args, " ")...)
+    fmt.Println("This commmand:", cmd)
 
 	outputPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -186,6 +191,7 @@ func runBinary(binaryName string, args string) (string, error) {
 	output := string(outputBytes)
 
 	fmt.Println("Binary Output:", output)
+	// fmt.Println("Some error:", err)
 
 	return output, nil
 }
