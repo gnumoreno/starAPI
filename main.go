@@ -146,7 +146,7 @@ func parseBirthdate(date string) (string, error) {
 	var err error
 
 	for _, format := range formats {
-		parsedTime, err = time.Parse(format, date)
+		parsedTime, err = time.ParseInLocation(format, date, time.UTC)
 		if err == nil {
 			break
 		}
