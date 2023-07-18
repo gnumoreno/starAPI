@@ -27,6 +27,12 @@ func main() {
 
 	// Endpoint to run the planets binary
 	app.Get("/run-planets", limiterMiddleware, func(c *fiber.Ctx) error {
+		debugParam := c.Query("debug")
+		debug := false
+		if debugParam == "true" {
+			debug = true
+		}
+
 		birthdate := c.Query("birthdate")
 		utctime := c.Query("utctime")
 		latitude := c.Query("latitude")
@@ -43,7 +49,7 @@ func main() {
 
 		args := fmt.Sprintf("-b%s -utc%s -p0123456789m -fPlbs -hsy%s -geopos%s,%s,%s -g\",\" -head", formattedDate, utctime, housesystem, longitude, latitude, altitude)
 
-		output, err := runBinary("swetest", args)
+		output, err := runBinary("swetest", args, debug)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(map[string]string{
 				"error": fmt.Sprintf("Failed to run planets binary: %v", err),
@@ -56,12 +62,20 @@ func main() {
 				"error": fmt.Sprintf("Failed to parse planets binary output: %v", err),
 			})
 		}
-
+		if debug {
+			fmt.Println("Planet result:", parsedOutput)
+		}
 		return c.JSON(parsedOutput)
 	})
 
 	// Endpoint to run the houses binary
 	app.Get("/run-houses", limiterMiddleware, func(c *fiber.Ctx) error {
+		debugParam := c.Query("debug")
+		debug := false
+		if debugParam == "true" {
+			debug = true
+		}
+
 		birthdate := c.Query("birthdate")
 		utctime := c.Query("utctime")
 		latitude := c.Query("latitude")
@@ -78,7 +92,7 @@ func main() {
 
 		args := fmt.Sprintf("-house -p -fPlb -b%s -utc%s -hsy%s -geopos%s,%s,%s -g\",\" -head", formattedDate, utctime, housesystem, longitude, latitude, altitude)
 
-		output, err := runBinary("swetest", args)
+		output, err := runBinary("swetest", args, debug)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(map[string]string{
 				"error": fmt.Sprintf("Failed to run houses binary: %v", err),
@@ -91,12 +105,20 @@ func main() {
 				"error": fmt.Sprintf("Failed to parse houses binary output: %v", err),
 			})
 		}
-
+		if debug {
+			fmt.Println("House result:", parsedOutput)
+		}
 		return c.JSON(parsedOutput)
 	})
 
 // Endpoint to run the star binary
 app.Get("/run-star", limiterMiddleware, func(c *fiber.Ctx) error {
+	debugParam := c.Query("debug")
+	debug := false
+	if debugParam == "true" {
+		debug = true
+	}
+	
 	birthdate := c.Query("birthdate")
 	utctime := c.Query("utctime")
 	stars := c.Query("stars")
@@ -115,7 +137,7 @@ app.Get("/run-star", limiterMiddleware, func(c *fiber.Ctx) error {
 	for _, star := range starList {
 		args := fmt.Sprintf("-b%s -utc%s -pf -fPlbsjw= -xf%s -head -g\",\"", formattedDate, utctime, star)
 
-		output, err := runBinary("swetest", args)
+		output, err := runBinary("swetest", args, debug)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(map[string]string{
 				"error": fmt.Sprintf("Failed to run star binary for star '%s': %v", star, err),
@@ -131,14 +153,23 @@ app.Get("/run-star", limiterMiddleware, func(c *fiber.Ctx) error {
 
 		result = append(result, parsedOutput...)
 	}
-	fmt.Println("Star result:", result)
+
+	if debug {
+		fmt.Println("Star result:", result)
+	}
+	
 	return c.JSON(result)
 })
 
 
 	// Endpoint to get the available options and parameters
 	app.Get("/options", func(c *fiber.Ctx) error {
-		response := getOptionResponse()
+		debugParam := c.Query("debug")
+		debug := false
+		if debugParam == "true" {
+			debug = true
+		}
+		response := getOptionResponse(debug)
 		return c.JSON(response)
 	})
 
@@ -176,9 +207,14 @@ func parseBirthdate(date string) (string, error) {
 	return formattedDate, nil
 }
 
-func runBinary(binaryName string, args string) (string, error) {
+func runBinary(binaryName string, args string, debug bool) (string, error) {
 	cmd := exec.Command(binaryName, strings.Split(args, " ")...)
-    fmt.Println("This commmand:", cmd)
+
+	if debug {
+		fmt.Println("Debug mode enabled for astroAPI")
+		fmt.Println("This commmand:", cmd)
+	}
+    
 
 	outputPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -199,9 +235,11 @@ func runBinary(binaryName string, args string) (string, error) {
 	}
 
 	output := string(outputBytes)
+	if debug {
+		fmt.Println("Binary Output:", output)
+	}
+	
 
-	fmt.Println("Binary Output:", output)
-	// fmt.Println("Some error:", err)
 
 	return output, nil
 }
@@ -317,33 +355,40 @@ func parsePlanetsOutput(output string) ([]map[string]string, error) {
 	}
 	
 	
-	func getOptionResponse() map[string]interface{} {
+	func getOptionResponse(debug bool) map[string]interface{} {
 		response := map[string]interface{}{
 			"endpoints": map[string]interface{}{
 				"/run-planets": map[string]interface{}{
+					"description": "Endpoint to run the planets binary.",
 					"parameters": map[string]interface{}{
-						"birthdate":   "string (required) - Birthdate in the format of 'dd.mm.yyyy', 'dd-mm-yyyy', or 'dd/mm/yyyy'",
-						"utctime":     "string (required) - UTC time in the format of 'hh:mm'",
-						"latitude":    "string (required) - Latitude in decimal format",
-						"longitude":   "string (required) - Longitude in decimal format",
-						"altitude":    "string (required) - Altitude in meters",
-						"housesystem": "string (required) - House system (P for Placidus, R for Regiomontanus)",
+						"birthdate":   "string (required) - Birthdate in the format of 'dd.mm.yyyy', 'dd-mm-yyyy', or 'dd/mm/yyyy'.",
+						"utctime":     "string (required) - UTC time in the format of 'hh:mm'.",
+						"latitude":    "string (required) - Latitude in decimal format.",
+						"longitude":   "string (required) - Longitude in decimal format.",
+						"altitude":    "string (required) - Altitude in meters.",
+						"housesystem": "string (required) - House system (P for Placidus, R for Regiomontanus).",
+						"debug":       "bool - Enable debug mode.",
 					},
 				},
 				"/run-houses": map[string]interface{}{
+					"description": "Endpoint to run the houses binary.",
 					"parameters": map[string]interface{}{
-						"birthdate":   "string (required) - Birthdate in the format of 'dd.mm.yyyy', 'dd-mm-yyyy', or 'dd/mm/yyyy'",
-						"utctime":     "string (required) - UTC time in the format of 'hh:mm'",
-						"latitude":    "string (required) - Latitude in decimal format",
-						"longitude":   "string (required) - Longitude in decimal format",
-						"altitude":    "string (required) - Altitude in meters",
-						"housesystem": "string (required) - House system (P for Placidus, R for Regiomontanus)",
+						"birthdate":   "string (required) - Birthdate in the format of 'dd.mm.yyyy', 'dd-mm-yyyy', or 'dd/mm/yyyy'.",
+						"utctime":     "string (required) - UTC time in the format of 'hh:mm'.",
+						"latitude":    "string (required) - Latitude in decimal format.",
+						"longitude":   "string (required) - Longitude in decimal format.",
+						"altitude":    "string (required) - Altitude in meters.",
+						"housesystem": "string (required) - House system (P for Placidus, R for Regiomontanus).",
+						"debug":       "bool - Enable debug mode.",
 					},
 				},
 				"/run-star": map[string]interface{}{
+					"description": "Endpoint to run the star binary.",
 					"parameters": map[string]interface{}{
-						"birthdate": "string (required) - Birthdate in the format of 'dd.mm.yyyy', 'dd-mm-yyyy', or 'dd/mm/yyyy'",
-						"utctime":   "string (required) - UTC time in the format of 'hh:mm'",
+						"birthdate": "string (required) - Birthdate in the format of 'dd.mm.yyyy', 'dd-mm-yyyy', or 'dd/mm/yyyy'.",
+						"utctime":   "string (required) - UTC time in the format of 'hh:mm'.",
+						"stars":     "string (required) - Comma-separated list of stars.",
+						"debug":     "bool - Enable debug mode.",
 					},
 				},
 			},
