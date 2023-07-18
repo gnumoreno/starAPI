@@ -10,13 +10,23 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 )
 
 func main() {
 	app := fiber.New()
 
+	limiterMiddleware := limiter.New(limiter.Config{
+		Max:        30,                        // Maximum number of requests
+		Expiration: 24 * time.Hour,            // Expiration duration for the rate limiter
+		KeyGenerator: func(c *fiber.Ctx) string {  // Custom key generator function
+			return c.IP() + "#" + c.Path()
+		},
+	})
+	
+
 	// Endpoint to run the planets binary
-	app.Get("/run-planets", func(c *fiber.Ctx) error {
+	app.Get("/run-planets", limiterMiddleware, func(c *fiber.Ctx) error {
 		birthdate := c.Query("birthdate")
 		utctime := c.Query("utctime")
 		latitude := c.Query("latitude")
@@ -51,7 +61,7 @@ func main() {
 	})
 
 	// Endpoint to run the houses binary
-	app.Get("/run-houses", func(c *fiber.Ctx) error {
+	app.Get("/run-houses", limiterMiddleware, func(c *fiber.Ctx) error {
 		birthdate := c.Query("birthdate")
 		utctime := c.Query("utctime")
 		latitude := c.Query("latitude")
@@ -86,7 +96,7 @@ func main() {
 	})
 
 // Endpoint to run the star binary
-app.Get("/run-star", func(c *fiber.Ctx) error {
+app.Get("/run-star", limiterMiddleware, func(c *fiber.Ctx) error {
 	birthdate := c.Query("birthdate")
 	utctime := c.Query("utctime")
 	stars := c.Query("stars")
