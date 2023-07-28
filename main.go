@@ -134,7 +134,7 @@ func main() {
 		var result []map[string]string
 
 		for _, star := range starList {
-			args := fmt.Sprintf("-b%s -utc%s -pf -fPlbsjw= -xf%s -head -g\",\"", formattedDate, utctime, star)
+			args := fmt.Sprintf("-b%s -utc%s -pf -fPlbsjW= -xf%s -head -g\",\"", formattedDate, utctime, star)
 
 			output, err := runBinary("swetest", args, debug)
 			if err != nil {
