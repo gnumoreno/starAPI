@@ -121,6 +121,10 @@ func main() {
 		birthdate := c.Query("birthdate")
 		utctime := c.Query("utctime")
 		stars := c.Query("stars")
+		housesystem := c.Query("housesystem")
+		longitude := c.Query("longitude")
+		latitude := c.Query("latitude")
+		altitude := c.Query("altitude")
 
 		formattedDate, err := parseBirthdate(birthdate)
 		if err != nil {
@@ -150,11 +154,34 @@ func main() {
 				})
 			}
 
+			if debug {
+				fmt.Println("Star result:", parsedOutput)
+			}
+
 			result = append(result, parsedOutput...)
 		}
 
-		if debug {
-			fmt.Println("Star result:", result)
+		for i := 7; i < 10; i++ {
+			args2 := fmt.Sprintf("-b%s -utc%s -p%d -hsy%s -fPlbsjW= -geopos%s,%s,%s -g\",\" -head", formattedDate, utctime, i, housesystem, longitude, latitude, altitude)
+
+			output2, err := runBinary("swetest", args2, debug)
+			if err != nil {
+				return c.Status(http.StatusInternalServerError).JSON(map[string]string{
+					"error": fmt.Sprintf("Failed to run star binary for planets: %v %s", err, output2),
+				})
+			}
+
+			parsedOutput2, err := parseStarOutput(output2)
+			if err != nil {
+				return c.Status(http.StatusInternalServerError).JSON(map[string]string{
+					"error": fmt.Sprintf("Failed to parse star binary output for planets: %v", err),
+				})
+			}
+			if debug {
+				fmt.Println("Star result:", parsedOutput2)
+			}
+
+			result = append(result, parsedOutput2...)
 		}
 
 		return c.JSON(result)
@@ -315,19 +342,45 @@ func parseStarOutput(output string) ([]map[string]string, error) {
 		}
 
 		fields := strings.Split(line, ",")
+
+		if len(fields) == 7 {
+			starName := strings.TrimSpace(strings.Trim(fields[0], "\""))
+			altName := "planet"
+			longitude := strings.TrimSpace(strings.Trim(fields[1], "\""))
+			latitude := strings.TrimSpace(strings.Trim(fields[2], "\""))
+			speed := strings.TrimSpace(strings.Trim(fields[3], "\""))
+			house := strings.TrimSpace(strings.Trim(fields[4], "\""))
+			distance := strings.TrimSpace(strings.Trim(fields[5], "\""))
+			magnitude := strings.TrimSpace(strings.Trim(fields[6], "\""))
+			magnitude = strings.TrimSuffix(magnitude, "m")
+
+			item := map[string]string{
+				"starName":  starName,
+				"altName":   altName,
+				"longitude": longitude,
+				"latitude":  latitude,
+				"speed":     speed,
+				"house":     house,
+				"distance":  distance,
+				"magnitude": magnitude,
+			}
+
+			result = append(result, item)
+			continue
+		}
 		if len(fields) != 8 {
 			return nil, fmt.Errorf("failed to parse star output line: %s", line)
 		}
 
-		starName := strings.TrimSpace(strings.Trim(fields[0], "\""))  // Remove leading/trailing spaces and extra `"`
-		altName := strings.TrimSpace(strings.Trim(fields[1], "\""))   // Remove leading/trailing spaces and extra `"`
-		longitude := strings.TrimSpace(strings.Trim(fields[2], "\"")) // Remove leading/trailing spaces and extra `"`
-		latitude := strings.TrimSpace(strings.Trim(fields[3], "\""))  // Remove leading/trailing spaces and extra `"`
-		speed := strings.TrimSpace(strings.Trim(fields[4], "\""))     // Remove leading/trailing spaces and extra `"`
-		house := strings.TrimSpace(strings.Trim(fields[5], "\""))     // Remove leading/trailing spaces and extra `"`
-		distance := strings.TrimSpace(strings.Trim(fields[6], "\""))  // Remove leading/trailing spaces and extra `"`
-		magnitude := strings.TrimSpace(strings.Trim(fields[7], "\"")) // Remove leading/trailing spaces and extra `"`
-		magnitude = strings.TrimSuffix(magnitude, "m")                // Strip trailing "m"
+		starName := strings.TrimSpace(strings.Trim(fields[0], "\""))
+		altName := strings.TrimSpace(strings.Trim(fields[1], "\""))
+		longitude := strings.TrimSpace(strings.Trim(fields[2], "\""))
+		latitude := strings.TrimSpace(strings.Trim(fields[3], "\""))
+		speed := strings.TrimSpace(strings.Trim(fields[4], "\""))
+		house := strings.TrimSpace(strings.Trim(fields[5], "\""))
+		distance := strings.TrimSpace(strings.Trim(fields[6], "\""))
+		magnitude := strings.TrimSpace(strings.Trim(fields[7], "\""))
+		magnitude = strings.TrimSuffix(magnitude, "m")
 
 		item := map[string]string{
 			"starName":  starName,
@@ -376,10 +429,13 @@ func getOptionResponse(debug bool) map[string]interface{} {
 			"/run-star": map[string]interface{}{
 				"description": "Endpoint to run the star binary.",
 				"parameters": map[string]interface{}{
-					"birthdate": "string (required) - Birthdate in the format of 'dd.mm.yyyy', 'dd-mm-yyyy', or 'dd/mm/yyyy'.",
-					"utctime":   "string (required) - UTC time in the format of 'hh:mm'.",
-					"stars":     "string (required) - Comma-separated list of stars.",
-					"debug":     "bool - Enable debug mode.",
+					"birthdate":   "string (required) - Birthdate in the format of 'dd.mm.yyyy', 'dd-mm-yyyy', or 'dd/mm/yyyy'.",
+					"utctime":     "string (required) - UTC time in the format of 'hh:mm'.",
+					"stars":       "string (required) - Comma-separated list of stars.",
+					"longitude":   "string (required) - Longitude in decimal format.",
+					"altitude":    "string (required) - Altitude in meters.",
+					"housesystem": "string (required) - House system (P for Placidus, R for Regiomontanus).",
+					"debug":       "bool - Enable debug mode.",
 				},
 			},
 		},
