@@ -46,7 +46,7 @@ func main() {
 			})
 		}
 
-		args := fmt.Sprintf("-b%s -utc%s -p0123456m -fPlbs -hsy%s -geopos%s,%s,%s -g\",\" -head", formattedDate, utctime, housesystem, longitude, latitude, altitude)
+		args := fmt.Sprintf("-b%s -utc%s -p0123456t789 -fPlbs -hsy%s -geopos%s,%s,%s -g\",\" -head", formattedDate, utctime, housesystem, longitude, latitude, altitude)
 
 		output, err := runBinary("swetest", args, debug)
 		if err != nil {
@@ -138,7 +138,7 @@ func main() {
 		var result []map[string]string
 
 		for _, star := range starList {
-			args := fmt.Sprintf("-b%s -utc%s -pf -fPlbsjw= -xf%s -head -g\",\"", formattedDate, utctime, star)
+			args := fmt.Sprintf("-b%s -utc%s -pf -fPlbsjW= -xf%s -head -g\",\"", formattedDate, utctime, star)
 
 			output, err := runBinary("swetest", args, debug)
 			if err != nil {
