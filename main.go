@@ -46,7 +46,7 @@ func main() {
 			})
 		}
 
-		args := fmt.Sprintf("-b%s -utc%s -p0123456t789 -fPlbs -hsy%s -geopos%s,%s,%s -g\",\" -head", formattedDate, utctime, housesystem, longitude, latitude, altitude)
+		args := fmt.Sprintf("-b%s -utc%s -p0123456t -fPlbs -hsy%s -geopos%s,%s,%s -g\",\" -head", formattedDate, utctime, housesystem, longitude, latitude, altitude)
 
 		output, err := runBinary("swetest", args, debug)
 		if err != nil {
